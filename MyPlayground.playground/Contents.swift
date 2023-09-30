@@ -5,8 +5,8 @@ let test = Test(name: "some string", time: 4, array: ["blah blah 1", "blah blah 
 let url = URL(string: test.string.description)!
 let params = url.getParams()
 print("parsed response", params)
-print(stringingHelper.getType(for: "time", in: params))
-print(stringingHelper.getInt(for: "time", in: params) ?? "?")
+print(test.getType(for: "time", in: params))
+print(test.getInt(for: "time", in: params) ?? "?")
 
 struct Test: Codable, Stringing {
     
@@ -15,11 +15,11 @@ struct Test: Codable, Stringing {
     var array: [String]
     
     var queryItems: [URLQueryItem] {
-        return stringingHelper.queryItems(params: ["name": name, "time": time.description, "array": array.joined(separator: ",")])
+        return queryItems(params: ["name": name, "time": time.description, "array": array.joined(separator: ",")])
     }
     
     var string: String {
-        return stringingHelper.string(components: queryItems)
+        return string(components: queryItems)
     }
 }
 
@@ -43,16 +43,16 @@ extension URL {
     }
 }
 
-class stringingHelper {
+extension Stringing {
     
-    static func string(components: [URLQueryItem]?)-> String {
+    func string(components: [URLQueryItem]?)-> String {
         var comp = URLComponents()
         comp.scheme = "https"
         comp.queryItems = components
         return comp.url?.absoluteString ?? "?"
     }
     
-    static func queryItems(params: [String: String])-> [URLQueryItem] {
+    func queryItems(params: [String: String])-> [URLQueryItem] {
         var items = [URLQueryItem]()
         for (key, value) in params {
             items.append(URLQueryItem(name: key, value: value))
@@ -60,8 +60,7 @@ class stringingHelper {
         return items
     }
     
-    enum VariableType { case int, double, bool, string, stringArray }
-    static func getType(for key: String, in params: [String : String])-> VariableType {
+    func getType(for key: String, in params: [String : String])-> VariableType {
         guard let value = params[key] else { return .string }
         if let _ = Int(value) {
             return .int
@@ -77,7 +76,7 @@ class stringingHelper {
         }
     }
     
-    static func getInt(for value: String, in params: [String : String])-> Int? {
+    func getInt(for value: String, in params: [String : String])-> Int? {
         if let val = params[value], let num = Int(val) {
             return num
         }
@@ -85,7 +84,8 @@ class stringingHelper {
     }
 }
 
-/// MARK: This protocol is a dependency inversion for using stringing functionalities using stringingHelper
+/// MARK: This protocol is a dependency inversion for using stringing functionalities
+enum VariableType { case int, double, bool, string, stringArray }
 protocol Stringing {
     var queryItems: [URLQueryItem] { get }
     var string: String { get }
