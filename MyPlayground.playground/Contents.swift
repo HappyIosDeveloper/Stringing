@@ -1,6 +1,5 @@
 import Foundation
 
-
 let test = Test(name: "some string", time: 4, array: ["blah blah 1", "blah blah 2"])
 print("Initial Struct", test)
 let url = URL(string: test.string.description)!
@@ -14,7 +13,7 @@ struct Test: Stringing {
     var name: String
     var time: Int
     var array: [String]
-    
+
     var queryItems: [URLQueryItem] {
         return allVariablesToQueryItems(model: self)
     }
@@ -38,7 +37,7 @@ extension Stringing {
         var comp = URLComponents()
         comp.scheme = "https"
         comp.queryItems = components
-        return comp.url?.absoluteString ?? "?"
+        return (comp.url?.absoluteString ?? "?")
     }
     
     func queryItems(params: [String: String])-> [URLQueryItem] {
@@ -58,7 +57,6 @@ extension Stringing {
         } else if let _ = Bool(value) {
             return .bool
         } else if !value.components(separatedBy: ",").isEmpty {
-            print("shit", value.components(separatedBy: ","))
             return .stringArray
         } else {
             return .string
@@ -72,16 +70,31 @@ extension Stringing {
         return nil
     }
     
-    func allVariablesToQueryItems(model: Any)-> [URLQueryItem]  {
+    func allVariablesToQueryItems(model: Any)-> [URLQueryItem] {
         var items: [URLQueryItem] = []
         let mirror = Mirror(reflecting: model)
         for child in mirror.children {
             items.append(URLQueryItem(name: child.label ?? "?", value: childConvertor(for: child)))
         }
         return items
-        
-        /// MARK: Add any new type you want to handle here
-        func childConvertor(for child: Mirror.Child)-> String {
+    }
+    
+    /// MARK: If you need a dictionary output
+    func convertToDic(model: Any)-> [String: String] {
+        var items: [String: String] = [:]
+        let mirror = Mirror(reflecting: model)
+        for child in mirror.children {
+            items[(child.label ?? "unknown")] = childConvertor(for: child)
+        }
+        return items
+    }
+    
+    /// MARK: Add any new type you want to handle here
+    private func childConvertor(for child: Mirror.Child)-> String {
+        /// First checks if child is an object itself
+        if let childObject = child.value as? Stringing {
+            return childObject.string.replacingOccurrences(of: "https:?", with: "")
+        } else {
             return child.value as? String ??
             (child.value as? Int)?.description ??
             (child.value as? [String])?.joined(separator: ",") ??
@@ -98,7 +111,11 @@ extension URL {
             let params = (urlComponents.queryItems ?? [])
             for item in params {
                 if let val = item.value {
-                    dic[item.name] = val
+                    if val.filter({$0 == "="}).count > 1 { // value is an object
+                        dic[item.name] = val.replacingOccurrences(of: "&", with: ",")
+                    } else {
+                        dic[item.name] = val
+                    }
                 }
             }
         }
