@@ -24,24 +24,12 @@ struct Test: Stringing {
     }
 }
 
-extension URL {
-    
-    func getParams()-> [String: String] {
-        var dic: [String: String] = [:]
-        if let urlComponents = components {
-            let params = (urlComponents.queryItems ?? [])
-            for item in params {
-                if let val = item.value {
-                    dic[item.name] = val
-                }
-            }
-        }
-        return dic
-    }
-    
-    var components: URLComponents? {
-        return URLComponents(url: self, resolvingAgainstBaseURL: false)
-    }
+/// MARK: This protocol is a dependency inversion for using stringing functionalities
+enum VariableType { case int, double, bool, string, stringArray }
+protocol Stringing {
+    var queryItems: [URLQueryItem] { get }
+    var string: String { get }
+    func allVariablesToQueryItems(model: Any)-> [URLQueryItem]
 }
 
 extension Stringing {
@@ -83,18 +71,7 @@ extension Stringing {
         }
         return nil
     }
-}
-
-/// MARK: This protocol is a dependency inversion for using stringing functionalities
-enum VariableType { case int, double, bool, string, stringArray }
-protocol Stringing {
-    var queryItems: [URLQueryItem] { get }
-    var string: String { get }
-    func allVariablesToQueryItems(model: Any)-> [URLQueryItem]
-}
-
-extension Stringing {
-
+    
     func allVariablesToQueryItems(model: Any)-> [URLQueryItem]  {
         var items: [URLQueryItem] = []
         let mirror = Mirror(reflecting: model)
@@ -110,5 +87,25 @@ extension Stringing {
             (child.value as? [String])?.joined(separator: ",") ??
             "??"
         }
+    }
+}
+
+extension URL {
+    
+    func getParams()-> [String: String] {
+        var dic: [String: String] = [:]
+        if let urlComponents = components {
+            let params = (urlComponents.queryItems ?? [])
+            for item in params {
+                if let val = item.value {
+                    dic[item.name] = val
+                }
+            }
+        }
+        return dic
+    }
+    
+    var components: URLComponents? {
+        return URLComponents(url: self, resolvingAgainstBaseURL: false)
     }
 }
