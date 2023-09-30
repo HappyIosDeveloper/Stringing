@@ -2,20 +2,21 @@ import Foundation
 
 
 let test = Test(name: "some string", time: 4, array: ["blah blah 1", "blah blah 2"])
+print("Initial Struct", test)
 let url = URL(string: test.string.description)!
 let params = url.getParams()
-print("parsed response", params)
-print(test.getType(for: "time", in: params))
-print(test.getInt(for: "time", in: params) ?? "?")
+print("parsed response:", params)
+print("parsed time type:", test.getType(for: "time", in: params))
+print("parsed time:", test.getInt(for: "time", in: params) ?? "?")
 
-struct Test: Codable, Stringing {
+struct Test: Stringing {
     
     var name: String
     var time: Int
     var array: [String]
     
     var queryItems: [URLQueryItem] {
-        return queryItems(params: ["name": name, "time": time.description, "array": array.joined(separator: ",")])
+        return allVariablesToQueryItems(model: self)
     }
     
     var string: String {
@@ -89,4 +90,25 @@ enum VariableType { case int, double, bool, string, stringArray }
 protocol Stringing {
     var queryItems: [URLQueryItem] { get }
     var string: String { get }
+    func allVariablesToQueryItems(model: Any)-> [URLQueryItem]
+}
+
+extension Stringing {
+
+    func allVariablesToQueryItems(model: Any)-> [URLQueryItem]  {
+        var items: [URLQueryItem] = []
+        let mirror = Mirror(reflecting: model)
+        for child in mirror.children {
+            items.append(URLQueryItem(name: child.label ?? "?", value: childConvertor(for: child)))
+        }
+        return items
+        
+        /// MARK: Add any new type you want to handle here
+        func childConvertor(for child: Mirror.Child)-> String {
+            return child.value as? String ??
+            (child.value as? Int)?.description ??
+            (child.value as? [String])?.joined(separator: ",") ??
+            "??"
+        }
+    }
 }
