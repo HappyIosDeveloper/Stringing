@@ -25,6 +25,7 @@ It's a Swift helper to convert structs to strings and vice versa (mostly to use 
 
 Use the bottom code:
 
+```
 struct MyObject: Codable {
     var number: Int
     var title: String
@@ -48,3 +49,4 @@ if let newStringData = validURL?.path.dropFirst().data(using: .utf8) {
 } else {
     print("Oops")
 }
+```
